@@ -6,8 +6,7 @@
 var express = require('express');
 var app = express();
 try{
-  var mongoose = require('mongoose');
-  mongoose.connect(process.env.MONGOOOSE_URI);
+  const mongoose = require('mongoose');
 } catch (e) {
   console.log(e);
 }

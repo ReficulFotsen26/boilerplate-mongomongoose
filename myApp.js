@@ -12,8 +12,9 @@
 // mongoose. Store your Mongo Atlas database URI in the private .env file 
 // as MONGO_URI. Connect to the database using the following syntax:
 //
-// mongoose.connect(<Your URI>, { useNewUrlParser: true, useUnifiedTopology: true }); 
-
+// mongoose.connect(<Your URI>, { useNewUrlParser: true, useUnifiedTopology: true });
+const mongoose = require('mongoose');
+mongoose.connect(process.env.MONGOOSE_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
 
 /** # SCHEMAS and MODELS #
@@ -40,7 +41,6 @@
 // `default` values. See the [mongoose docs](http://mongoosejs.com/docs/guide.html).
 
 // <Your code here >
-var mongoose = require('mongoose');
 var Schema = mongoose.Schema; 
 
 var personSchema = new Schema({
@@ -51,7 +51,6 @@ var personSchema = new Schema({
   age: Number,
   favoriteFoods: [String]
 });
-var Person = mongoose.model("Person", personSchema);
 
 // **Note**: Glitch is a real server, and in real servers interactions with
 // the db are placed in handler functions, to be called when some event happens
@@ -88,10 +87,15 @@ var Person = mongoose.model("Person", personSchema);
 //    ...do your stuff here...
 // });
 
-var createAndSavePerson = function(done) {
-  
-  done(null /*, data*/);
+var Person = mongoose.model("Person", personSchema);
 
+var createAndSavePerson = function(done) {
+  var josephGrijalva = new Person({name: "Joseph Grijalva", age: 16, favoriteFoods: ["Sushi", "Tacos", "Boba Tea"]});
+
+  josephGrijalva.save(function(err, data) {
+     if (err) return console.error(err);
+    done(null, data)
+  });
 };
 
 /** 4) Create many People with `Model.create()` */
@@ -103,10 +107,17 @@ var createAndSavePerson = function(done) {
 // Create many people using `Model.create()`, using the function argument
 // 'arrayOfPeople'.
 
+var arrayOfPeople = [
+  {name: "Jim Smith", age: 23, favoriteFoods: ["Fried Chicken", "Broccoli "]},
+  {name: "Hannah Yolanda", age: 43, favoriteFoods: ["Bagels", "Churros"]},
+  {name: "Joseph Joestar", age: 92, favoriteFoods: ["Chewing Gum", "Fried Chicken"]}
+];
+
 var createManyPeople = function(arrayOfPeople, done) {
-    
-    done(null/*, data*/);
-    
+Person.create(arrayOfPeople, function (err, people) {
+    if (err) return console.log(err);
+    done(null, people);
+  });
 };
 
 /** # C[R]UD part II - READ #
@@ -121,9 +132,10 @@ var createManyPeople = function(arrayOfPeople, done) {
 // Use the function argument `personName` as search key.
 
 var findPeopleByName = function(personName, done) {
-  
-  done(null/*, data*/);
-
+  Person.find({name: personName}, function(err, personFound) {
+    if (err) return console.log(err)
+    done(null, personFound);
+  });
 };
 
 /** 6) Use `Model.findOne()` */
@@ -136,9 +148,10 @@ var findPeopleByName = function(personName, done) {
 // argument `food` as search key
 
 var findOneByFood = function(food, done) {
-
-  done(null/*, data*/);
-  
+  Person.findOne({favoriteFoods: food}, function(err, data){
+    if (err) return console.log(err);
+    done(null, data);
+  });
 };
 
 /** 7) Use `Model.findById()` */
@@ -150,10 +163,11 @@ var findOneByFood = function(food, done) {
 // using `Model.findById() -> Person`.
 // Use the function argument 'personId' as search key.
 
-var findPersonById = function(personId, done) {
-  
-  done(null/*, data*/);
-  
+var findPersonById = function(personId, done) {    
+  Person.findById(personId, function(err, data){
+    if (err) return console.log(err);  
+    done(null, data);
+  });
 };
 
 /** # CR[U]D part III - UPDATE # 
@@ -181,10 +195,15 @@ var findPersonById = function(personId, done) {
 // manually mark it as edited using `document.markModified('edited-field')`
 // (http://mongoosejs.com/docs/schematypes.html - #Mixed )
 
-var findEditThenSave = function(personId, done) {
+var findEditThenSave = function(personId, done) {  
   var foodToAdd = 'hamburger';
-  
-  done(null/*, data*/);
+  Person.findById(personId, function(err, data){
+    if (err){
+      console.log(err);
+    }
+    data.favoriteFoods.push(foodToAdd);
+    data.save((err, data) => (err ? done(err): done(null, data)));
+  });
 };
 
 /** 9) New Update : Use `findOneAndUpdate()` */
@@ -204,8 +223,13 @@ var findEditThenSave = function(personId, done) {
 
 var findAndUpdate = function(personName, done) {
   var ageToSet = 20;
-
-  done(null/*, data*/);
+  Person.findOneAndUpdate( {name: personName}, {age: ageToSet}, {new: true}, function(err, data) {
+      if (err) {
+         done(err); 
+      }
+      done(null, data);
+    }
+  )
 };
 
 /** # CRU[D] part IV - DELETE #
@@ -219,9 +243,12 @@ var findAndUpdate = function(personName, done) {
 // As usual, use the function argument `personId` as search key.
 
 var removeById = function(personId, done) {
-  
-  done(null/*, data*/);
-    
+  Person.findByIdAndRemove(personId, function(err, data) {
+    if(err) {
+      console.log(err);
+    }
+    done(null, data);
+    });  
 };
 
 /** 11) Delete many People */
@@ -236,8 +263,12 @@ var removeById = function(personId, done) {
 
 var removeManyPeople = function(done) {
   var nameToRemove = "Mary";
-
-  done(null/*, data*/);
+  Person.remove(function(err, data){
+    if(err){
+      console.log(err);
+    }
+    done(null, data);
+    });
 };
 
 /** # C[R]UD part V -  More about Queries # 
@@ -261,8 +292,16 @@ var removeManyPeople = function(done) {
 
 var queryChain = function(done) {
   var foodToSearch = "burrito";
-  
-  done(null/*, data*/);
+  Person.find({ favoriteFoods: foodToSearch })
+  .sort({name: 1})
+  .limit(2)
+  .select({ age: 0 })
+  .exec(function(err, data) {
+    if(err) {
+      console.log(err);
+    }
+    done(null, data);
+  });
 };
 
 /** **Well Done !!**
@@ -281,7 +320,6 @@ var queryChain = function(done) {
 //----- **DO NOT EDIT BELOW THIS LINE** ----------------------------------
 
 exports.PersonModel = Person;
-/*
 exports.createAndSavePerson = createAndSavePerson;
 exports.findPeopleByName = findPeopleByName;
 exports.findOneByFood = findOneByFood;
@@ -292,4 +330,3 @@ exports.createManyPeople = createManyPeople;
 exports.removeById = removeById;
 exports.removeManyPeople = removeManyPeople;
 exports.queryChain = queryChain;
-*/
